@@ -1,4 +1,3 @@
-// Mappa per i nomi delle versioni
 const versionNames = {
     "FormWin11": "Windows 11",
     "FormWin10": "Windows 10",
@@ -7,7 +6,6 @@ const versionNames = {
     "FormSpecial": "Strumenti Speciali"
 };
 
-// Mappa per i nomi delle architetture
 const architectureNames = {
     "x64": "64-bit",
     "x32": "32-bit",
@@ -15,34 +13,28 @@ const architectureNames = {
     "Arm64": "ARM 64-bit"
 };
 
-// Mappa per i tipi di edizione
 const editionNames = {
     "Stock": "Standard",
     "Lite": "Lite",
     "ltsc": "LTSC"
 };
 
-// Funzione per estrarre informazioni dal nome della chiave
 function parseKeyInfo(key) {
     const isSha = key.includes('Sha256');
     let baseKey = isSha ? key.replace('Sha256', '') : key;
     
-    // Estrae la versione (10, 11, 7, 8)
     const versionMatch = key.match(/^(10|11|7|8)/);
     const version = versionMatch ? versionMatch[1] : '';
     
-    // Estrae l'architettura
     let architecture = '';
     if (baseKey.includes('x64')) architecture = 'x64';
     else if (baseKey.includes('x32') || baseKey.includes('x86')) architecture = 'x32';
     else if (baseKey.includes('Arm64')) architecture = 'Arm64';
     
-    // Estrae l'edizione
-    let edition = 'Stock'; // Default
+    let edition = 'Stock';
     if (baseKey.includes('Lite')) edition = 'Lite';
     else if (baseKey.includes('ltsc')) edition = 'ltsc';
     
-    // Estrae la versione specifica (24H2, 25H2)
     let specificVersion = '';
     if (baseKey.includes('24h2') || baseKey.includes('24H2') || baseKey.includes('24H224H2')) specificVersion = '24H2';
     else if (baseKey.includes('25h2') || baseKey.includes('25H2') || baseKey.includes('25H225h2')) specificVersion = '25H2';
@@ -117,7 +109,7 @@ function createSpecialLinks() {
         container.appendChild(card);
     });
 }
-// Funzione per creare un nome leggibile per l'ISO
+
 function createDisplayName(keyInfo) {
     let name = `Windows ${keyInfo.version}`;
     
@@ -131,9 +123,8 @@ function createDisplayName(keyInfo) {
     return name;
 }
 
-// Funzione per trovare lo SHA corrispondente a una chiave URL
+
 function findMatchingSHA(urlKey, isoEntries) {
-    // Mappatura diretta per i casi specifici problematici
     const specialCases = {
         '11Litex6425h2': '11Sha256Litex64 - 25H225h2',
         '11Stockx6425h2': '11Sha256Stockx64 - 25H225h2',
@@ -156,7 +147,6 @@ function findMatchingSHA(urlKey, isoEntries) {
     return 'Non disponibile';
 }
 
-// Funzione per creare le card delle ISO
 function createIsoCards() {
     const container = document.getElementById('iso-container');
     container.innerHTML = '';
@@ -168,15 +158,12 @@ function createIsoCards() {
     
     let hasResults = false;
     
-    // Aggiungi i link speciali PRIMA (solo se passano i filtri)
     if (versionFilter === 'all' || versionFilter === 'special') {
         createSpecialLinks();
         hasResults = true;
     }
     
-    // Itera attraverso tutte le versioni di Windows, ma SALTA FormSpecial
     for (const [formKey, formData] of Object.entries(isoData)) {
-        // SALTA completamente FormSpecial - già gestito sopra
         if (formKey === "FormSpecial") {
             continue;
         }
@@ -184,35 +171,28 @@ function createIsoCards() {
         const versionName = versionNames[formKey];
         const versionId = formKey.toLowerCase().replace('formwin', 'win');
         
-        // Applica filtro versione
         if (versionFilter !== 'all' && versionFilter !== versionId) {
             continue;
         }
         
-        // Itera attraverso le lingue
         for (const [language, isoEntries] of Object.entries(formData)) {
-            // Applica filtro lingua
             if (languageFilter !== 'all' && languageFilter !== language) {
                 continue;
             }
             
-            // Crea le card per ogni URL (solo chiavi che non sono SHA e hanno un URL valido)
             for (const [key, url] of Object.entries(isoEntries)) {
                 const keyInfo = parseKeyInfo(key);
                 
-                // Salta se è una chiave SHA o se l'URL è vuoto
                 if (keyInfo.isSha || !url || url === 'sha') {
                     continue;
                 }
                 
                 const displayName = createDisplayName(keyInfo);
                 
-                // Applica filtro edizione
                 if (editionFilter !== 'all' && editionFilter !== keyInfo.edition) {
                     continue;
                 }
                 
-                // Applica filtro di ricerca
                 if (searchFilter && !displayName.toLowerCase().includes(searchFilter)) {
                     continue;
                 }
@@ -263,7 +243,6 @@ function createIsoCards() {
         container.innerHTML = '<div class="no-results">Nessun risultato trovato con i filtri applicati.</div>';
     }
     
-    // Aggiunge event listener per i pulsanti di copia SHA
     document.querySelectorAll('.copy-sha').forEach(button => {
         button.addEventListener('click', function() {
             const sha = this.getAttribute('data-sha');
@@ -281,14 +260,11 @@ function createIsoCards() {
         });
     });
     
-    // Nasconde il loading
     document.getElementById('loading').classList.add('hidden');
 }
 
-// Funzione per calcolare l'hash SHA256 di un file in modo efficiente
 async function calculateSHA256(file) {
     return new Promise((resolve, reject) => {
-        // Controlla la dimensione del file (max 10GB per sicurezza)
         const MAX_FILE_SIZE = 10 * 1024 * 1024 * 1024; // 10GB
         if (file.size > MAX_FILE_SIZE) {
             reject(new Error('File troppo grande. Dimensione massima consentita: 10GB'));
@@ -297,17 +273,15 @@ async function calculateSHA256(file) {
 
         const reader = new FileReader();
         let chunksProcessed = 0;
-        const chunkSize = 4 * 1024 * 1024; // 4MB per chunk
+        const chunkSize = 4 * 1024 * 1024;
         const totalChunks = Math.ceil(file.size / chunkSize);
         
-        // Inizializza l'hash
         crypto.subtle.digest('SHA-256', new ArrayBuffer(0))
             .then(hashBuffer => {
                 let hash = new Uint8Array(hashBuffer);
                 
                 function processChunk(chunkIndex) {
                     if (chunkIndex >= totalChunks) {
-                        // Tutti i chunk sono stati processati
                         const hashHex = Array.from(hash).map(b => b.toString(16).padStart(2, '0')).join('');
                         resolve(hashHex);
                         return;
@@ -322,16 +296,13 @@ async function calculateSHA256(file) {
                     chunkReader.onload = function(e) {
                         const arrayBuffer = e.target.result;
                         
-                        // Combina l'hash corrente con il nuovo chunk
                         crypto.subtle.digest('SHA-256', new Uint8Array([...hash, ...new Uint8Array(arrayBuffer)]))
                             .then(newHashBuffer => {
                                 hash = new Uint8Array(newHashBuffer);
                                 chunksProcessed++;
                                 
-                                // Aggiorna la barra di progresso se esiste
                                 updateProgress(chunksProcessed, totalChunks);
                                 
-                                // Processa il prossimo chunk
                                 setTimeout(() => processChunk(chunkIndex + 1), 0);
                             })
                             .catch(error => {
@@ -346,7 +317,6 @@ async function calculateSHA256(file) {
                     chunkReader.readAsArrayBuffer(chunk);
                 }
                 
-                // Inizia il processing
                 processChunk(0);
             })
             .catch(error => {
@@ -355,14 +325,12 @@ async function calculateSHA256(file) {
     });
 }
 
-// Funzione per aggiornare il progresso
 function updateProgress(current, total) {
     const resultDiv = document.getElementById('verification-result');
     const percentage = Math.round((current / total) * 100);
     resultDiv.innerHTML = `Calcolo SHA256 in corso... ${percentage}% (${current}/${total} chunk)`;
 }
 
-// Funzione per verificare l'hash SHA256
 async function verifySHA256() {
     const fileInput = document.getElementById('file-input');
     const shaInput = document.getElementById('sha-input');
@@ -384,7 +352,6 @@ async function verifySHA256() {
     const file = fileInput.files[0];
     const expectedSHA = shaInput.value.trim().toLowerCase();
     
-    // Disabilita il pulsante durante il calcolo
     verifyBtn.disabled = true;
     verifyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calcolo in corso...';
     
@@ -407,27 +374,21 @@ async function verifySHA256() {
         resultDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${error.message}`;
         resultDiv.className = 'verification-result error';
     } finally {
-        // Riabilita il pulsante
         verifyBtn.disabled = false;
         verifyBtn.innerHTML = '<i class="fas fa-check-circle"></i> Verifica SHA256';
     }
 }
 
-// Inizializzazione della pagina
 document.addEventListener('DOMContentLoaded', function() {
-    // Crea le card delle ISO
     createIsoCards();
     
-    // Aggiunge event listener per i filtri
     document.getElementById('version-filter').addEventListener('change', createIsoCards);
     document.getElementById('language-filter').addEventListener('change', createIsoCards);
     document.getElementById('edition-filter').addEventListener('change', createIsoCards);
     document.getElementById('search').addEventListener('input', createIsoCards);
     
-    // Aggiunge event listener per il pulsante di verifica SHA256
     document.getElementById('verify-btn').addEventListener('click', verifySHA256);
     
-    // Aggiunge event listener per permettere di premere Enter nel campo SHA
     document.getElementById('sha-input').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             verifySHA256();
