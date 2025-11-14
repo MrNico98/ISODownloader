@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download ISO Windows - Verifica SHA256</title>
+    <link rel="stylesheet" href="Style/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1><i class="fab fa-windows"></i> Download ISO Windows</h1>
+            <p>Scarica le ISO ufficiali e lite. Puoi verifica l'integrità dei file con gli hash SHA256</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="intro">
+            <h2>Come utilizzare questo sito</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <p>Scegli la versione di Windows che desideri scaricare</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <p>Clicca sul pulsante di download per ottenere il file ISO</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <p>Dopo il download, verifica l'integrità del file con lo SHA256</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="filter-section">
+            <div class="filter-controls">
+                <div class="filter-group">
+                    <label for="version-filter">Filtra per versione:</label>
+                    <select id="version-filter">
+                        <option value="all">Tutte le versioni</option>
+                        <option value="win11">Windows 11</option>
+                        <option value="win10">Windows 10</option>
+                        <option value="win8">Windows 8</option>
+                        <option value="win7">Windows 7</option>
+                        <option value="special">Strumenti Speciali</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="language-filter">Filtra per lingua:</label>
+                    <select id="language-filter">
+                        <option value="all">Tutte le lingue</option>
+                        <option value="IT">Italiano</option>
+                        <option value="EN">Inglese</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="edition-filter">Filtra per edizione:</label>
+                    <select id="edition-filter">
+                        <option value="all">Tutte le edizioni</option>
+                        <option value="Stock">Stock/Standard</option>
+                        <option value="Lite">Lite</option>
+                        <option value="ltsc">LTSC</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="search">Cerca:</label>
+                    <input type="text" id="search" placeholder="Cerca per nome...">
+                </div>
+            </div>
+        </section>
+
+        <section class="iso-list">
+            <div id="loading" class="loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Caricamento ISO...</p>
+            </div>
+            <div id="iso-container" class="iso-container"></div>
+        </section>
+
+        <section class="sha-verification">
+            <h2>Verifica SHA256</h2>
+            <div class="verification-tool">
+                <div class="input-group">
+                    <label for="file-input">Seleziona il file ISO:</label>
+                    <input type="file" id="file-input" accept=".iso">
+                </div>
+                <div class="input-group">
+                    <label for="sha-input">Inserisci SHA256 atteso:</label>
+                    <input type="text" id="sha-input" placeholder="Incolla qui lo SHA256 dal JSON...">
+                </div>
+                <button id="verify-btn" class="btn btn-primary">
+                    <i class="fas fa-check-circle"></i> Verifica SHA256
+                </button>
+                <div id="verification-result" class="verification-result"></div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>Questo sito fornisce link a ISO di Windows per scopi educativi e di backup.</p>
+            <p>Assicurati di possedere una licenza valida per utilizzare il software Microsoft.</p>
+        </div>
+    </footer>
+
+    <script src="JS/data.js"></script>
+    <script src="JS/script.js"></script>
+</body>
+</html>
