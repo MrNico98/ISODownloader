@@ -168,14 +168,19 @@ function createIsoCards() {
     
     let hasResults = false;
     
-    // Aggiungi i link speciali (sempre visibili a meno che non siano filtrati esplicitamente)
+    // Aggiungi i link speciali PRIMA (solo se passano i filtri)
     if (versionFilter === 'all' || versionFilter === 'special') {
         createSpecialLinks();
         hasResults = true;
     }
     
-    // Itera attraverso tutte le versioni di Windows
+    // Itera attraverso tutte le versioni di Windows, ma SALTA FormSpecial
     for (const [formKey, formData] of Object.entries(isoData)) {
+        // SALTA completamente FormSpecial - già gestito sopra
+        if (formKey === "FormSpecial") {
+            continue;
+        }
+        
         const versionName = versionNames[formKey];
         const versionId = formKey.toLowerCase().replace('formwin', 'win');
         
