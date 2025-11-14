@@ -377,7 +377,6 @@ footer p {
     }
 }
 
-/* Aggiungi alla fine del file style.css */
 .progress-bar {
     width: 100%;
     height: 20px;
@@ -398,15 +397,14 @@ footer p {
 .iso-detail .detail-label {
     font-weight: 500;
     min-width: 80px;
-    margin-right: 10px; /* Aggiunge spazio dopo i due punti */
+    margin-right: 10px;
 }
 
 .iso-detail .detail-value {
     color: var(--gray);
-    flex: 1; /* Permette al valore di occupare lo spazio rimanente */
+    flex: 1;
 }
 
-/* Per i link speciali con descrizione lunga */
 .special-description {
     line-height: 1.4;
     margin-top: 5px;
