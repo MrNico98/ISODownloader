@@ -1,4 +1,5 @@
 const versionNames = {
+    "FormServer": "Windows Server",
     "FormWin11": "Windows 11",
     "FormWin10": "Windows 10",
     "FormWin8": "Windows 8",
@@ -23,6 +24,24 @@ function parseKeyInfo(key) {
     const isSha = key.includes('Sha256');
     let baseKey = isSha ? key.replace('Sha256', '') : key;
     
+    // Gestione Windows Server
+    if (key.includes('Server')) {
+        let version = '';
+        if (key.includes('2025')) version = '2025';
+        else if (key.includes('2022')) version = '2022';
+        else if (key.includes('2019')) version = '2019';
+        else if (key.includes('2016')) version = '2016';
+        
+        return {
+            isSha,
+            version,
+            architecture: 'x64', // I server sono solo 64-bit
+            edition: 'Server',
+            specificVersion: '',
+            isServer: true
+        };
+    }
+    
     const versionMatch = key.match(/^(10|11|7|8)/);
     const version = versionMatch ? versionMatch[1] : '';
     
@@ -44,7 +63,8 @@ function parseKeyInfo(key) {
         version,
         architecture,
         edition,
-        specificVersion
+        specificVersion,
+        isServer: false
     };
 }
 function createSpecialLinks() {
@@ -111,6 +131,10 @@ function createSpecialLinks() {
 }
 
 function createDisplayName(keyInfo) {
+    if (keyInfo.isServer) {
+        return `Windows Server ${keyInfo.version} ${architectureNames[keyInfo.architecture] || keyInfo.architecture}`;
+    }
+    
     let name = `Windows ${keyInfo.version}`;
     
     if (keyInfo.specificVersion) {
@@ -135,6 +159,14 @@ function findMatchingSHA(urlKey, isoEntries) {
     // Se è un caso speciale, usa la mappatura diretta
     if (specialCases[urlKey] && isoEntries[specialCases[urlKey]]) {
         return isoEntries[specialCases[urlKey]];
+    }
+    
+    // Per Windows Server
+    if (urlKey.includes('Server')) {
+        const shaKey = urlKey.replace('x64', 'Sha256x64');
+        if (isoEntries[shaKey]) {
+            return isoEntries[shaKey];
+        }
     }
     
     // Per tutti gli altri casi, usa la logica normale
@@ -169,7 +201,15 @@ function createIsoCards() {
         }
         
         const versionName = versionNames[formKey];
-        const versionId = formKey.toLowerCase().replace('formwin', 'win');
+        // Correzione qui: gestisci sia "FormWin" che "FormServer"
+        let versionId = '';
+        if (formKey.startsWith('FormWin')) {
+            versionId = formKey.toLowerCase().replace('formwin', 'win');
+        } else if (formKey === 'FormServer') {
+            versionId = 'server';
+        } else {
+            versionId = formKey.toLowerCase();
+        }
         
         if (versionFilter !== 'all' && versionFilter !== versionId) {
             continue;
@@ -206,10 +246,13 @@ function createIsoCards() {
                 card.dataset.edition = keyInfo.edition;
                 card.dataset.name = displayName.toLowerCase();
                 
+                // Usa icona server per Windows Server
+                const iconClass = keyInfo.isServer ? 'fas fa-server' : 'fab fa-windows';
+                
                 card.innerHTML = `
                     <div class="iso-header">
                         <div class="iso-icon">
-                            <i class="fab fa-windows"></i>
+                            <i class="${iconClass}"></i>
                         </div>
                         <div class="iso-title">${displayName}</div>
                     </div>
