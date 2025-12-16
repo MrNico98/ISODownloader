@@ -101,5 +101,15 @@ const isoData = {
             "DaRTWinHubX": "https://devuploads.com/ucpfdcbe6bl3", 
             "DriverRST": "https://github.com/MrNico98/WinHubX-Resource/releases/download/WinHubX-Risorse/DriverRST.zip"
         }
+    },
+    "FormServer": {
+        "IT": {
+            "Server2025x64": "https://devuploads.com/vmhf4nsvsja8",
+            "Server2025Sha256x64": "04ba1defe039bfb3df1c50e2734635c6659cf1e6e4e24fbad8490ad79d8263e7",
+        },
+        "EN": {
+            "Server2025x64": "https://test/test",
+            "Server2025Sha256x64": "test",
+        }
     }
 };
