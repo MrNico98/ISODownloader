@@ -14,59 +14,6 @@ const architectureNames = {
     "Arm64": "ARM 64-bit"
 };
 
-const editionNames = {
-    "Stock": "Standard",
-    "Lite": "Lite",
-    "ltsc": "LTSC"
-};
-
-function parseKeyInfo(key) {
-    const isSha = key.includes('Sha256');
-    let baseKey = isSha ? key.replace('Sha256', '') : key;
-    
-    // Gestione Windows Server
-    if (key.includes('Server')) {
-        let version = '';
-        if (key.includes('2025')) version = '2025';
-        else if (key.includes('2022')) version = '2022';
-        else if (key.includes('2019')) version = '2019';
-        else if (key.includes('2016')) version = '2016';
-        
-        return {
-            isSha,
-            version,
-            architecture: 'x64', // I server sono solo 64-bit
-            edition: 'Server',
-            specificVersion: '',
-            isServer: true
-        };
-    }
-    
-    const versionMatch = key.match(/^(10|11|7|8)/);
-    const version = versionMatch ? versionMatch[1] : '';
-    
-    let architecture = '';
-    if (baseKey.includes('x64')) architecture = 'x64';
-    else if (baseKey.includes('x32') || baseKey.includes('x86')) architecture = 'x32';
-    else if (baseKey.includes('Arm64')) architecture = 'Arm64';
-    
-    let edition = 'Stock';
-    if (baseKey.includes('Lite')) edition = 'Lite';
-    else if (baseKey.includes('ltsc')) edition = 'ltsc';
-    
-    let specificVersion = '';
-    if (baseKey.includes('24h2') || baseKey.includes('24H2') || baseKey.includes('24H224H2')) specificVersion = '24H2';
-    else if (baseKey.includes('25h2') || baseKey.includes('25H2') || baseKey.includes('25H225h2')) specificVersion = '25H2';
-    
-    return {
-        isSha,
-        version,
-        architecture,
-        edition,
-        specificVersion,
-        isServer: false
-    };
-}
 function createSpecialLinks() {
     const specialLinks = [
         {
@@ -130,53 +77,15 @@ function createSpecialLinks() {
     });
 }
 
-function createDisplayName(keyInfo) {
-    if (keyInfo.isServer) {
-        return `Windows Server ${keyInfo.version} ${architectureNames[keyInfo.architecture] || keyInfo.architecture}`;
+function createDisplayName(formKey, isoData) {
+    const version = versionNames[formKey];
+    let displayName = version;
+    
+    if (isoData.versione) {
+        displayName += ` ${isoData.versione}`;
     }
     
-    let name = `Windows ${keyInfo.version}`;
-    
-    if (keyInfo.specificVersion) {
-        name += ` ${keyInfo.specificVersion}`;
-    }
-    
-    name += ` ${editionNames[keyInfo.edition] || keyInfo.edition}`;
-    name += ` ${architectureNames[keyInfo.architecture] || keyInfo.architecture}`;
-    
-    return name;
-}
-
-
-function findMatchingSHA(urlKey, isoEntries) {
-    const specialCases = {
-        '11Litex6425h2': '11Sha256Litex64 - 25H225h2',
-        '11Stockx6425h2': '11Sha256Stockx64 - 25H225h2',
-        '11Litex6424h2': '11Sha256Litex64 - 24H224H2',
-        '11Stockx6424h2': '11Sha256Stockx6424h2'
-    };
-    
-    // Se è un caso speciale, usa la mappatura diretta
-    if (specialCases[urlKey] && isoEntries[specialCases[urlKey]]) {
-        return isoEntries[specialCases[urlKey]];
-    }
-    
-    // Per Windows Server
-    if (urlKey.includes('Server')) {
-        const shaKey = urlKey.replace('x64', 'Sha256x64');
-        if (isoEntries[shaKey]) {
-            return isoEntries[shaKey];
-        }
-    }
-    
-    // Per tutti gli altri casi, usa la logica normale
-    const shaKey = urlKey.replace(/^(10|11|7|8)/, '$1Sha256');
-    
-    if (isoEntries[shaKey] && isoEntries[shaKey] !== 'sha' && isoEntries[shaKey] !== '') {
-        return isoEntries[shaKey];
-    }
-    
-    return 'Non disponibile';
+    return displayName;
 }
 
 function createIsoCards() {
@@ -185,7 +94,7 @@ function createIsoCards() {
     
     const versionFilter = document.getElementById('version-filter').value;
     const languageFilter = document.getElementById('language-filter').value;
-    const editionFilter = document.getElementById('edition-filter').value;
+    const editionFilter = document.getElementById('edition-filter').value; // Aggiungi questa riga
     const searchFilter = document.getElementById('search').value.toLowerCase();
     
     let hasResults = false;
@@ -196,12 +105,12 @@ function createIsoCards() {
     }
     
     for (const [formKey, formData] of Object.entries(isoData)) {
+        // Salta FormSpecial perché già gestito separatamente
         if (formKey === "FormSpecial") {
             continue;
         }
         
         const versionName = versionNames[formKey];
-        // Correzione qui: gestisci sia "FormWin" che "FormServer"
         let versionId = '';
         if (formKey.startsWith('FormWin')) {
             versionId = formKey.toLowerCase().replace('formwin', 'win');
@@ -220,41 +129,81 @@ function createIsoCards() {
                 continue;
             }
             
-            for (const [key, url] of Object.entries(isoEntries)) {
-                const keyInfo = parseKeyInfo(key);
-                
-                if (keyInfo.isSha || !url || url === 'sha') {
-                    continue;
-                }
-                
-                const displayName = createDisplayName(keyInfo);
-                
-                if (editionFilter !== 'all' && editionFilter !== keyInfo.edition) {
-                    continue;
-                }
+            for (const [key, isoData] of Object.entries(isoEntries)) {
+                const displayName = createDisplayName(formKey, isoData);
                 
                 if (searchFilter && !displayName.toLowerCase().includes(searchFilter)) {
                     continue;
                 }
                 
-                const shaValue = findMatchingSHA(key, isoEntries);
+                // Determina l'architettura dal nome della chiave
+                let architecture = '';
+                if (key.includes('x64')) architecture = 'x64';
+                else if (key.includes('x32') || key.includes('x86')) architecture = 'x32';
+                else if (key.includes('Arm64')) architecture = 'Arm64';
+                else architecture = key.includes('64') ? 'x64' : (key.includes('32') ? 'x32' : '');
+                
+                // Determina l'edizione base
+                let edition = '';
+                if (isoData.versione) {
+                    const versioneLower = isoData.versione.toLowerCase();
+                    if (versioneLower.includes('ltsc')) edition = 'ltsc';
+                    else if (versioneLower.includes('lite')) edition = 'lite';
+                    else if (versioneLower.includes('consumer')) edition = 'consumer';
+                    else if (versioneLower.includes('pro')) edition = 'pro';
+                    else if (versioneLower.includes('enterprise')) edition = 'enterprise';
+                    else if (versioneLower.includes('ultimate')) edition = 'ultimate';
+                    else if (versioneLower.includes('stock')) edition = 'stock';
+                }
+                
+                // Applica il filtro per edizione
+                if (editionFilter !== 'all') {
+                    const editionFilterLower = editionFilter.toLowerCase();
+                    const versioneLower = isoData.versione ? isoData.versione.toLowerCase() : '';
+                    
+                    // Controlla se l'edizione corrisponde al filtro
+                    let editionMatch = false;
+                    
+                    if (editionFilterLower === 'lite' && versioneLower.includes('lite')) {
+                        editionMatch = true;
+                    } else if (editionFilterLower === 'ltsc' && versioneLower.includes('ltsc')) {
+                        editionMatch = true;
+                    } else if (editionFilterLower === 'stock' && versioneLower.includes('stock')) {
+                        editionMatch = true;
+                    } else if (editionFilterLower === 'standard' && versioneLower.includes('consumer')) {
+                        editionMatch = true;
+                    } else if (editionFilterLower === edition) {
+                        editionMatch = true;
+                    }
+                    
+                    if (!editionMatch) {
+                        continue;
+                    }
+                }
                 
                 const card = document.createElement('div');
                 card.className = 'iso-card';
                 card.dataset.version = versionId;
                 card.dataset.language = language;
-                card.dataset.edition = keyInfo.edition;
+                card.dataset.edition = edition;
                 card.dataset.name = displayName.toLowerCase();
                 
                 // Usa icona server per Windows Server
-                const iconClass = keyInfo.isServer ? 'fas fa-server' : 'fab fa-windows';
+                const iconClass = formKey === 'FormServer' ? 'fas fa-server' : 'fab fa-windows';
+                
+                // Aggiungi badge per l'architettura se disponibile
+                const architectureBadge = architecture ? 
+                    `<span class="architecture-badge">${architectureNames[architecture] || architecture}</span>` : '';
                 
                 card.innerHTML = `
                     <div class="iso-header">
                         <div class="iso-icon">
                             <i class="${iconClass}"></i>
                         </div>
-                        <div class="iso-title">${displayName}</div>
+                        <div class="iso-title">
+                            ${displayName}
+                            ${architectureBadge}
+                        </div>
                     </div>
                     <div class="iso-details">
                         <div class="iso-detail">
@@ -262,17 +211,23 @@ function createIsoCards() {
                             <span class="detail-value">${language === 'IT' ? 'Italiano' : 'Inglese'}</span>
                         </div>
                         <div class="iso-detail">
+                            <span class="detail-label">Versione:</span>
+                            <span class="detail-value">${isoData.versione || 'Standard'}</span>
+                        </div>
+                        <div class="iso-detail">
                             <span class="detail-label">SHA256:</span>
-                            <span class="detail-value sha-value">${shaValue}</span>
+                            <span class="detail-value sha-value">${isoData.sha256 || 'Non disponibile'}</span>
                         </div>
                     </div>
                     <div class="iso-actions">
-                        <a href="${url}" class="btn btn-primary" target="_blank" ${url ? '' : 'disabled'}>
+                        <a href="${isoData.link}" class="btn btn-primary" target="_blank" ${isoData.link ? '' : 'disabled'}>
                             <i class="fas fa-download"></i> Scarica
                         </a>
-                        <button class="btn btn-outline copy-sha" data-sha="${shaValue}">
+                        ${isoData.sha256 ? `
+                        <button class="btn btn-outline copy-sha" data-sha="${isoData.sha256}">
                             <i class="fas fa-copy"></i> Copia SHA
                         </button>
+                        ` : ''}
                     </div>
                 `;
                 
@@ -427,7 +382,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     document.getElementById('version-filter').addEventListener('change', createIsoCards);
     document.getElementById('language-filter').addEventListener('change', createIsoCards);
-    document.getElementById('edition-filter').addEventListener('change', createIsoCards);
+    document.getElementById('edition-filter').addEventListener('change', createIsoCards); // Aggiungi questa riga
     document.getElementById('search').addEventListener('input', createIsoCards);
     
     document.getElementById('verify-btn').addEventListener('click', verifySHA256);
