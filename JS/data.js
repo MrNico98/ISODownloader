@@ -1,4 +1,4 @@
-const isoData = {
+const  = {
     "FormWin10": {
         "IT": {
             "Arm64": {
