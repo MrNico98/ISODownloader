@@ -265,7 +265,7 @@ async function calculateSHA256(file) {
 
     const hasher = await hashwasm.createSHA256();
 
-    const chunkSize = 4 * 1024 * 1024; // 4MB
+    const chunkSize = 16 * 1024 * 1024;
     const totalChunks = Math.ceil(file.size / chunkSize);
 
     let offset = 0;
