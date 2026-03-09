@@ -262,65 +262,30 @@ function createIsoCards() {
 }
 
 async function calculateSHA256(file) {
-    return new Promise((resolve, reject) => {
-        const MAX_FILE_SIZE = 10 * 1024 * 1024 * 1024; // 10GB
-        if (file.size > MAX_FILE_SIZE) {
-            reject(new Error('File troppo grande. Dimensione massima consentita: 10GB'));
-            return;
-        }
 
-        const reader = new FileReader();
-        let chunksProcessed = 0;
-        const chunkSize = 4 * 1024 * 1024;
-        const totalChunks = Math.ceil(file.size / chunkSize);
-        
-        crypto.subtle.digest('SHA-256', new ArrayBuffer(0))
-            .then(hashBuffer => {
-                let hash = new Uint8Array(hashBuffer);
-                
-                function processChunk(chunkIndex) {
-                    if (chunkIndex >= totalChunks) {
-                        const hashHex = Array.from(hash).map(b => b.toString(16).padStart(2, '0')).join('');
-                        resolve(hashHex);
-                        return;
-                    }
-                    
-                    const start = chunkIndex * chunkSize;
-                    const end = Math.min(start + chunkSize, file.size);
-                    const chunk = file.slice(start, end);
-                    
-                    const chunkReader = new FileReader();
-                    
-                    chunkReader.onload = function(e) {
-                        const arrayBuffer = e.target.result;
-                        
-                        crypto.subtle.digest('SHA-256', new Uint8Array([...hash, ...new Uint8Array(arrayBuffer)]))
-                            .then(newHashBuffer => {
-                                hash = new Uint8Array(newHashBuffer);
-                                chunksProcessed++;
-                                
-                                updateProgress(chunksProcessed, totalChunks);
-                                
-                                setTimeout(() => processChunk(chunkIndex + 1), 0);
-                            })
-                            .catch(error => {
-                                reject(new Error('Errore nel calcolo dell\'hash: ' + error.message));
-                            });
-                    };
-                    
-                    chunkReader.onerror = () => {
-                        reject(new Error('Errore durante la lettura del chunk del file'));
-                    };
-                    
-                    chunkReader.readAsArrayBuffer(chunk);
-                }
-                
-                processChunk(0);
-            })
-            .catch(error => {
-                reject(new Error('Impossibile inizializzare l\'hash SHA256: ' + error.message));
-            });
-    });
+    const hasher = await hashwasm.createSHA256();
+
+    const chunkSize = 4 * 1024 * 1024; // 4MB
+    const totalChunks = Math.ceil(file.size / chunkSize);
+
+    let offset = 0;
+    let chunkIndex = 0;
+
+    while (offset < file.size) {
+
+        const chunk = await file.slice(offset, offset + chunkSize).arrayBuffer();
+        hasher.update(new Uint8Array(chunk));
+
+        offset += chunkSize;
+        chunkIndex++;
+
+        updateProgress(chunkIndex, totalChunks);
+
+        // evita freeze della UI
+        await new Promise(r => setTimeout(r, 0));
+    }
+
+    return hasher.digest();
 }
 
 function updateProgress(current, total) {
