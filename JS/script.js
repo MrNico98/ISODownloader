@@ -170,7 +170,7 @@ function createIsoCards() {
                         editionMatch = true;
                     } else if (editionFilterLower === 'stock' && versioneLower.includes('stock')) {
                         editionMatch = true;
-                    } else if (editionFilterLower === 'standard' && versioneLower.includes('consumer')) {
+                    } else if (editionFilterLower === 'standard' && (versioneLower.includes('consumer') || versioneLower.includes('stock'))) {
                         editionMatch = true;
                     } else if (editionFilterLower === edition) {
                         editionMatch = true;
