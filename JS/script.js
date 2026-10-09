@@ -1,360 +1,207 @@
+import { isoData } from "./data.js";
+import { isSha256, safeExternalUrl } from "./security.js";
+
 const versionNames = {
-    "FormServer": "Windows Server",
-    "FormWin11": "Windows 11",
-    "FormWin10": "Windows 10",
-    "FormWin8": "Windows 8",
-    "FormWin7": "Windows 7",
-    "FormSpecial": "Strumenti Speciali"
+    FormServer: "Windows Server",
+    FormWin11: "Windows 11",
+    FormWin10: "Windows 10",
+    FormWin8: "Windows 8",
+    FormWin7: "Windows 7",
+    FormSpecial: "Strumenti Speciali"
 };
 
-const architectureNames = {
-    "x64": "64-bit",
-    "x32": "32-bit",
-    "x86": "32-bit",
-    "Arm64": "ARM 64-bit"
-};
+const architectureNames = { x64: "64-bit", x32: "32-bit", Arm64: "ARM 64-bit" };
+const specialLinks = [
+    { name: "WinHubX Live", description: "Ambiente live per ripristino e manutenzione", url: "https://devuploads.com/ucpfdcbe6bl3", icon: "fas fa-desktop" },
+    { name: "DaRT WinHubX", description: "Diagnostic and Recovery Toolset", url: "https://devuploads.com/ucpfdcbe6bl3", icon: "fas fa-tools" },
+    { name: "Driver RST", description: "Intel Rapid Storage Technology Drivers", url: "https://github.com/MrNico98/WinHubX-Resource/releases/download/WinHubX-Risorse/DriverRST.zip", icon: "fas fa-microchip" }
+];
 
-function createSpecialLinks() {
-    const specialLinks = [
-        {
-            key: "WinHubXLive",
-            name: "WinHubX Live",
-            description: "Ambiente live per ripristino e manutenzione",
-            url: "https://devuploads.com/ucpfdcbe6bl3",
-            icon: "fas fa-desktop"
-        },
-        {
-            key: "DaRTWinHubX",
-            name: "DaRT WinHubX", 
-            description: "Diagnostic and Recovery Toolset",
-            url: "https://devuploads.com/ucpfdcbe6bl3",
-            icon: "fas fa-tools"
-        },
-        {
-            key: "DriverRST",
-            name: "Driver RST",
-            description: "Intel Rapid Storage Technology Drivers",
-            url: "https://github.com/MrNico98/WinHubX-Resource/releases/download/WinHubX-Risorse/DriverRST.zip",
-            icon: "fas fa-microchip"
-        }
-    ];
-
-    const container = document.getElementById('iso-container');
-    
-    specialLinks.forEach(link => {
-        const card = document.createElement('div');
-        card.className = 'iso-card';
-        card.dataset.version = 'special';
-        card.dataset.language = 'all';
-        card.dataset.edition = 'special';
-        card.dataset.name = link.name.toLowerCase();
-        
-        card.innerHTML = `
-            <div class="iso-header">
-                <div class="iso-icon">
-                    <i class="${link.icon}"></i>
-                </div>
-                <div class="iso-title">${link.name}</div>
-            </div>
-            <div class="iso-details">
-                <div class="iso-detail">
-                    <span class="detail-label">Tipo:</span>
-                    <span class="detail-value">Strumento speciale</span>
-                </div>
-                <div class="iso-detail">
-                    <span class="detail-label">Descrizione:</span>
-                    <span class="detail-value">${link.description}</span>
-                </div>
-            </div>
-            <div class="iso-actions">
-                <a href="${link.url}" class="btn btn-primary" target="_blank">
-                    <i class="fas fa-download"></i> Scarica
-                </a>
-            </div>
-        `;
-        
-        container.appendChild(card);
-    });
+function element(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
 }
 
-function createDisplayName(formKey, isoData) {
-    const version = versionNames[formKey];
-    let displayName = version;
-    
-    if (isoData.versione) {
-        displayName += ` ${isoData.versione}`;
-    }
-    
-    return displayName;
+function detail(label, value, valueClass = "") {
+    const row = element("div", "iso-detail");
+    row.append(element("span", "detail-label", `${label}:`), element("span", `detail-value ${valueClass}`.trim(), value));
+    return row;
 }
 
-function createIsoCards() {
-    const container = document.getElementById('iso-container');
-    container.innerHTML = '';
-    
-    const versionFilter = document.getElementById('version-filter').value;
-    const languageFilter = document.getElementById('language-filter').value;
-    const editionFilter = document.getElementById('edition-filter').value; // Aggiungi questa riga
-    const searchFilter = document.getElementById('search').value.toLowerCase();
-    
-    let hasResults = false;
-    
-    if (versionFilter === 'all' || versionFilter === 'special') {
-        createSpecialLinks();
-        hasResults = true;
-    }
-    
-    for (const [formKey, formData] of Object.entries(isoData)) {
-        // Salta FormSpecial perché già gestito separatamente
-        if (formKey === "FormSpecial") {
-            continue;
-        }
-        
-        const versionName = versionNames[formKey];
-        let versionId = '';
-        if (formKey.startsWith('FormWin')) {
-            versionId = formKey.toLowerCase().replace('formwin', 'win');
-        } else if (formKey === 'FormServer') {
-            versionId = 'server';
-        } else {
-            versionId = formKey.toLowerCase();
-        }
-        
-        if (versionFilter !== 'all' && versionFilter !== versionId) {
-            continue;
-        }
-        
-        for (const [language, isoEntries] of Object.entries(formData)) {
-            if (languageFilter !== 'all' && languageFilter !== language) {
-                continue;
-            }
-            
-            for (const [key, isoData] of Object.entries(isoEntries)) {
-                const displayName = createDisplayName(formKey, isoData);
-                
-                if (searchFilter && !displayName.toLowerCase().includes(searchFilter)) {
-                    continue;
-                }
-                
-                // Determina l'architettura dal nome della chiave
-                let architecture = '';
-                if (key.includes('x64')) architecture = 'x64';
-                else if (key.includes('x32') || key.includes('x86')) architecture = 'x32';
-                else if (key.includes('Arm64')) architecture = 'Arm64';
-                else architecture = key.includes('64') ? 'x64' : (key.includes('32') ? 'x32' : '');
-                
-                // Determina l'edizione base
-                let edition = '';
-                if (isoData.versione) {
-                    const versioneLower = isoData.versione.toLowerCase();
-                    if (versioneLower.includes('ltsc')) edition = 'ltsc';
-                    else if (versioneLower.includes('lite')) edition = 'lite';
-                    else if (versioneLower.includes('consumer')) edition = 'consumer';
-                    else if (versioneLower.includes('pro')) edition = 'pro';
-                    else if (versioneLower.includes('enterprise')) edition = 'enterprise';
-                    else if (versioneLower.includes('ultimate')) edition = 'ultimate';
-                    else if (versioneLower.includes('stock')) edition = 'stock';
-                }
-                
-                // Applica il filtro per edizione
-                if (editionFilter !== 'all') {
-                    const editionFilterLower = editionFilter.toLowerCase();
-                    const versioneLower = isoData.versione ? isoData.versione.toLowerCase() : '';
-                    
-                    // Controlla se l'edizione corrisponde al filtro
-                    let editionMatch = false;
-                    
-                    if (editionFilterLower === 'lite' && versioneLower.includes('lite')) {
-                        editionMatch = true;
-                    } else if (editionFilterLower === 'ltsc' && versioneLower.includes('ltsc')) {
-                        editionMatch = true;
-                    } else if (editionFilterLower === 'stock' && versioneLower.includes('stock')) {
-                        editionMatch = true;
-                    } else if (editionFilterLower === 'standard' && (versioneLower.includes('consumer') || versioneLower.includes('stock'))) {
-                        editionMatch = true;
-                    } else if (editionFilterLower === edition) {
-                        editionMatch = true;
-                    }
-                    
-                    if (!editionMatch) {
-                        continue;
-                    }
-                }
-                
-                const card = document.createElement('div');
-                card.className = 'iso-card';
-                card.dataset.version = versionId;
-                card.dataset.language = language;
-                card.dataset.edition = edition;
-                card.dataset.name = displayName.toLowerCase();
-                
-                // Usa icona server per Windows Server
-                const iconClass = formKey === 'FormServer' ? 'fas fa-server' : 'fab fa-windows';
-                
-                // Aggiungi badge per l'architettura se disponibile
-                const architectureBadge = architecture ? 
-                    `<span class="architecture-badge">${architectureNames[architecture] || architecture}</span>` : '';
-                
-                card.innerHTML = `
-                    <div class="iso-header">
-                        <div class="iso-icon">
-                            <i class="${iconClass}"></i>
-                        </div>
-                        <div class="iso-title">
-                            ${displayName}
-                            ${architectureBadge}
-                        </div>
-                    </div>
-                    <div class="iso-details">
-                        <div class="iso-detail">
-                            <span class="detail-label">Lingua:</span>
-                            <span class="detail-value">${language === 'IT' ? 'Italiano' : 'Inglese'}</span>
-                        </div>
-                        <div class="iso-detail">
-                            <span class="detail-label">Versione:</span>
-                            <span class="detail-value">${isoData.versione || 'Standard'}</span>
-                        </div>
-                        <div class="iso-detail">
-                            <span class="detail-label">SHA256:</span>
-                            <span class="detail-value sha-value">${isoData.sha256 || 'Non disponibile'}</span>
-                        </div>
-                    </div>
-                    <div class="iso-actions">
-                        <a href="${isoData.link}" class="btn btn-primary" target="_blank" ${isoData.link ? '' : 'disabled'}>
-                            <i class="fas fa-download"></i> Scarica
-                        </a>
-                        ${isoData.sha256 ? `
-                        <button class="btn btn-outline copy-sha" data-sha="${isoData.sha256}">
-                            <i class="fas fa-copy"></i> Copia SHA
-                        </button>
-                        ` : ''}
-                    </div>
-                `;
-                
-                container.appendChild(card);
-                hasResults = true;
-            }
-        }
-    }
-    
-    if (!hasResults) {
-        container.innerHTML = '<div class="no-results">Nessun risultato trovato con i filtri applicati.</div>';
-    }
-    
-    document.querySelectorAll('.copy-sha').forEach(button => {
-        button.addEventListener('click', function() {
-            const sha = this.getAttribute('data-sha');
-            if (sha && sha !== 'Non disponibile') {
-                navigator.clipboard.writeText(sha).then(() => {
-                    const originalText = this.innerHTML;
-                    this.innerHTML = '<i class="fas fa-check"></i> Copiato!';
-                    this.classList.add('btn-success');
-                    setTimeout(() => {
-                        this.innerHTML = originalText;
-                        this.classList.remove('btn-success');
-                    }, 2000);
-                });
+function createDownloadLink(url) {
+    const safeUrl = safeExternalUrl(url);
+    if (!safeUrl) return element("span", "btn btn-primary", "Download non disponibile");
+    const link = element("a", "btn btn-primary");
+    link.href = safeUrl;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.append(element("i", "fas fa-download"), document.createTextNode(" Scarica"));
+    return link;
+}
+
+function createSpecialCard(item) {
+    const card = element("article", "iso-card");
+    Object.assign(card.dataset, { version: "special", language: "all", edition: "special", name: item.name.toLowerCase() });
+    const header = element("div", "iso-header");
+    const icon = element("div", "iso-icon");
+    icon.append(element("i", item.icon));
+    header.append(icon, element("div", "iso-title", item.name));
+    const details = element("div", "iso-details");
+    details.append(detail("Tipo", "Strumento speciale"), detail("Descrizione", item.description));
+    const actions = element("div", "iso-actions");
+    actions.append(createDownloadLink(item.url));
+    card.append(header, details, actions);
+    return card;
+}
+
+function createIsoCard(formKey, language, key, item) {
+    const versionName = versionNames[formKey] ?? formKey;
+    const displayName = `${versionName}${item.versione ? ` ${item.versione}` : ""}`;
+    const versionId = formKey === "FormServer" ? "server" : formKey.toLowerCase().replace("formwin", "win");
+    const architecture = ["Arm64", "x64", "x32", "x86"].find((candidate) => key.toLowerCase().includes(candidate.toLowerCase()));
+    const normalizedArchitecture = architecture === "x86" ? "x32" : architecture;
+    const editionText = (item.versione ?? "").toLowerCase();
+    const edition = ["ltsc", "lite", "consumer", "pro", "enterprise", "ultimate", "stock"].find((name) => editionText.includes(name)) ?? "";
+
+    const card = element("article", "iso-card");
+    Object.assign(card.dataset, { version: versionId, language, edition, name: displayName.toLowerCase() });
+    const header = element("div", "iso-header");
+    const icon = element("div", "iso-icon");
+    icon.append(element("i", formKey === "FormServer" ? "fas fa-server" : "fab fa-windows"));
+    const title = element("div", "iso-title", displayName);
+    if (normalizedArchitecture) title.append(document.createTextNode(" "), element("span", "architecture-badge", architectureNames[normalizedArchitecture]));
+    header.append(icon, title);
+
+    const details = element("div", "iso-details");
+    details.append(
+        detail("Lingua", language === "IT" ? "Italiano" : "Inglese"),
+        detail("Versione", item.versione || "Standard"),
+        detail("SHA256", item.sha256 || "Non disponibile", "sha-value")
+    );
+    const actions = element("div", "iso-actions");
+    actions.append(createDownloadLink(item.link));
+    if (isSha256(item.sha256)) {
+        const copy = element("button", "btn btn-outline copy-sha");
+        copy.type = "button";
+        copy.append(element("i", "fas fa-copy"), document.createTextNode(" Copia SHA"));
+        copy.addEventListener("click", async () => {
+            try {
+                await navigator.clipboard.writeText(item.sha256);
+                copy.replaceChildren(element("i", "fas fa-check"), document.createTextNode(" Copiato!"));
+                copy.classList.add("btn-success");
+                setTimeout(() => {
+                    copy.replaceChildren(element("i", "fas fa-copy"), document.createTextNode(" Copia SHA"));
+                    copy.classList.remove("btn-success");
+                }, 2000);
+            } catch {
+                copy.textContent = "Copia non disponibile";
             }
         });
-    });
-    
-    document.getElementById('loading').classList.add('hidden');
+        actions.append(copy);
+    }
+    card.append(header, details, actions);
+    return card;
+}
+
+function matchesEdition(filter, item) {
+    if (filter === "all") return true;
+    const value = (item.versione ?? "").toLowerCase();
+    if (filter === "standard") return value.includes("consumer") || value.includes("stock");
+    return value.includes(filter.toLowerCase());
+}
+
+function renderCards() {
+    const container = document.getElementById("iso-container");
+    const version = document.getElementById("version-filter").value;
+    const language = document.getElementById("language-filter").value;
+    const edition = document.getElementById("edition-filter").value;
+    const search = document.getElementById("search").value.trim().toLocaleLowerCase();
+    const cards = [];
+
+    if ((version === "all" || version === "special") && language === "all" && (edition === "all" || edition === "special")) {
+        for (const item of specialLinks) if (!search || item.name.toLocaleLowerCase().includes(search)) cards.push(createSpecialCard(item));
+    }
+
+    for (const [formKey, languages] of Object.entries(isoData)) {
+        if (formKey === "FormSpecial") continue;
+        const versionId = formKey === "FormServer" ? "server" : formKey.toLowerCase().replace("formwin", "win");
+        if (version !== "all" && version !== versionId) continue;
+        for (const [languageCode, entries] of Object.entries(languages)) {
+            if (language !== "all" && language !== languageCode) continue;
+            for (const [key, item] of Object.entries(entries)) {
+                const name = `${versionNames[formKey] ?? formKey}${item.versione ? ` ${item.versione}` : ""}`;
+                if (search && !name.toLocaleLowerCase().includes(search)) continue;
+                if (!matchesEdition(edition, item)) continue;
+                cards.push(createIsoCard(formKey, languageCode, key, item));
+            }
+        }
+    }
+
+    container.replaceChildren(...(cards.length ? cards : [element("div", "no-results", "Nessun risultato trovato con i filtri applicati.")]));
+    document.getElementById("loading").classList.add("hidden");
 }
 
 async function calculateSHA256(file) {
-
     const hasher = await hashwasm.createSHA256();
-
+    hasher.init();
     const chunkSize = 16 * 1024 * 1024;
     const totalChunks = Math.ceil(file.size / chunkSize);
-
     let offset = 0;
     let chunkIndex = 0;
-
     while (offset < file.size) {
-
         const chunk = await file.slice(offset, offset + chunkSize).arrayBuffer();
         hasher.update(new Uint8Array(chunk));
-
-        offset += chunkSize;
+        offset += chunk.byteLength;
         chunkIndex++;
-
-        updateProgress(chunkIndex, totalChunks);
-
-        // evita freeze della UI
-        await new Promise(r => setTimeout(r, 0));
+        document.getElementById("verification-result").textContent = `Calcolo SHA256 in corso... ${Math.round((chunkIndex / totalChunks) * 100)}% (${chunkIndex}/${totalChunks} chunk)`;
+        await new Promise((resolve) => setTimeout(resolve, 0));
     }
-
-    return hasher.digest();
-}
-
-function updateProgress(current, total) {
-    const resultDiv = document.getElementById('verification-result');
-    const percentage = Math.round((current / total) * 100);
-    resultDiv.innerHTML = `Calcolo SHA256 in corso... ${percentage}% (${current}/${total} chunk)`;
+    return hasher.digest("hex");
 }
 
 async function verifySHA256() {
-    const fileInput = document.getElementById('file-input');
-    const shaInput = document.getElementById('sha-input');
-    const resultDiv = document.getElementById('verification-result');
-    const verifyBtn = document.getElementById('verify-btn');
-    
-    if (!fileInput.files.length) {
-        resultDiv.innerHTML = 'Seleziona un file ISO da verificare.';
-        resultDiv.className = 'verification-result error';
+    const file = document.getElementById("file-input").files[0];
+    const expected = document.getElementById("sha-input").value.trim().toLowerCase();
+    const result = document.getElementById("verification-result");
+    const button = document.getElementById("verify-btn");
+    if (!file) {
+        result.textContent = "Seleziona un file ISO da verificare.";
+        result.className = "verification-result error";
         return;
     }
-    
-    if (!shaInput.value.trim()) {
-        resultDiv.innerHTML = 'Inserisci un hash SHA256 da confrontare.';
-        resultDiv.className = 'verification-result error';
+    if (!isSha256(expected)) {
+        result.textContent = "Inserisci un hash SHA256 valido (64 caratteri esadecimali).";
+        result.className = "verification-result error";
         return;
     }
-    
-    const file = fileInput.files[0];
-    const expectedSHA = shaInput.value.trim().toLowerCase();
-    
-    verifyBtn.disabled = true;
-    verifyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calcolo in corso...';
-    
-    resultDiv.innerHTML = 'Calcolo SHA256 in corso... 0%';
-    resultDiv.className = 'verification-result';
-    
+
+    button.disabled = true;
+    button.textContent = "Calcolo in corso...";
+    result.textContent = "Calcolo SHA256 in corso... 0%";
+    result.className = "verification-result";
     try {
-        const calculatedSHA = await calculateSHA256(file);
-        
-        if (calculatedSHA === expectedSHA) {
-            resultDiv.innerHTML = '<i class="fas fa-check-circle"></i> Verifica completata: gli hash corrispondono!';
-            resultDiv.className = 'verification-result success';
-        } else {
-            resultDiv.innerHTML = `<i class="fas fa-times-circle"></i> Verifica fallita: gli hash non corrispondono.<br>
-                                  <strong>Calcolato:</strong> ${calculatedSHA}<br>
-                                  <strong>Atteso:</strong> ${expectedSHA}`;
-            resultDiv.className = 'verification-result error';
-        }
-    } catch (error) {
-        resultDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${error.message}`;
-        resultDiv.className = 'verification-result error';
+        const calculated = await calculateSHA256(file);
+        result.textContent = calculated === expected
+            ? "Verifica completata: gli hash corrispondono!"
+            : `Verifica fallita: gli hash non corrispondono. Calcolato: ${calculated} — Atteso: ${expected}`;
+        result.className = `verification-result ${calculated === expected ? "success" : "error"}`;
+    } catch {
+        result.textContent = "Impossibile calcolare l'hash del file selezionato.";
+        result.className = "verification-result error";
     } finally {
-        verifyBtn.disabled = false;
-        verifyBtn.innerHTML = '<i class="fas fa-check-circle"></i> Verifica SHA256';
+        button.disabled = false;
+        button.textContent = "Verifica SHA256";
     }
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    createIsoCards();
-    
-    document.getElementById('version-filter').addEventListener('change', createIsoCards);
-    document.getElementById('language-filter').addEventListener('change', createIsoCards);
-    document.getElementById('edition-filter').addEventListener('change', createIsoCards); // Aggiungi questa riga
-    document.getElementById('search').addEventListener('input', createIsoCards);
-    
-    document.getElementById('verify-btn').addEventListener('click', verifySHA256);
-    
-    document.getElementById('sha-input').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            verifySHA256();
-        }
+document.addEventListener("DOMContentLoaded", () => {
+    renderCards();
+    for (const id of ["version-filter", "language-filter", "edition-filter"]) document.getElementById(id).addEventListener("change", renderCards);
+    document.getElementById("search").addEventListener("input", renderCards);
+    document.getElementById("verify-btn").addEventListener("click", verifySHA256);
+    document.getElementById("sha-input").addEventListener("keydown", (event) => {
+        if (event.key === "Enter") verifySHA256();
     });
 });

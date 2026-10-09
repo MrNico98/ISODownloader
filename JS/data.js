@@ -1,4 +1,4 @@
-const isoData = {
+export const isoData = {
     "FormWin10": {
         "IT": {
             "Arm64": {
@@ -232,8 +232,8 @@ const isoData = {
         },
         "EN": {
             "Server2025x64": {
-                "link": "https://test/test",
-                "sha256": "test",
+                "link": "",
+                "sha256": "",
                 "versione": "Server 2025"
             }
         }

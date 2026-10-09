@@ -5,17 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Download ISO Windows - Verifica SHA256</title>
     <link rel="stylesheet" href="Style/style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha384-iw3OoTErCYJJB9mCa8LNS2hbsQ7M3C0EpIsO/H5+EGAkPGc6rk+V8i04oW/K5xq0" crossorigin="anonymous">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='20' y='20' width='60' height='60' fill='%230078d7'/><rect x='30' y='30' width='20' height='20' fill='white'/><rect x='55' y='30' width='20' height='20' fill='white'/><rect x='30' y='55' width='20' height='20' fill='white'/><rect x='55' y='55' width='20' height='20' fill='white'/></svg>">
 </head>
 <body>
     <header>
         <div class="container">
             <h1><i class="fab fa-windows"></i> Download ISO Windows & Server</h1>
-            <p>Scarica le ISO ufficiali e lite. Puoi verifica l'integrità dei file con gli hash SHA256</p>
+            <p>Consulta i link disponibili e verifica l’integrità dei file con SHA-256.</p>
         </div>
     </header>
 
@@ -98,20 +95,19 @@
                 <button id="verify-btn" class="btn btn-primary">
                     <i class="fas fa-check-circle"></i> Verifica SHA256
                 </button>
-                <div id="verification-result" class="verification-result"></div>
+                <div id="verification-result" class="verification-result" role="status" aria-live="polite"></div>
             </div>
         </section>
     </main>
 
     <footer>
         <div class="container">
-            <p>Questo sito fornisce link a ISO di Windows e Windows Server per scopi educativi e di backup.</p>
-            <p>Assicurati di possedere una licenza valida per utilizzare il software Microsoft.</p>
+            <p>I link delle immagini, incluse quelle personalizzate, puntano a servizi di terze parti e non sono distribuiti né approvati da Microsoft. Controlla sempre provenienza e integrità prima dell’uso.</p>
+            <p>Gli hash riportati sono dichiarati da questo progetto e non costituiscono attestazioni indipendenti di autenticità. Per immagini Microsoft, preferisci i canali ufficiali e una licenza valida.</p>
         </div>
     </footer>
 
-    <script src="JS/data.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/hash-wasm@4/dist/sha256.umd.min.js"></script>
-    <script src="JS/script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hash-wasm@4.12.0/dist/sha256.umd.min.js" integrity="sha384-Wgjx+8tLxXJSOx0qsuYHWUruquWEGSmkfn24UY1UGLJpwzCAMKZ3kbRI89jpYIVm" crossorigin="anonymous"></script>
+    <script type="module" src="JS/script.js"></script>
 </body>
 </html>
